@@ -8,7 +8,7 @@ pygame.init()
 screen = pygame.display.set_mode((1000, 800))
 pygame.display.set_caption("SUCC")
 pygame.key.set_repeat(1)
-delayFPS=1000/10
+delayFPS=1000/30
 
 class ManagerForRealBoxes:
     #private
@@ -33,8 +33,9 @@ class ManagerForRealBoxes:
         for box in self.allRealBoxes:
             box.updateCurrentMovement()
             if self.checkAllForCollision(box):
-                self.checkAllForCollision(box)
                 print("SecondCheck")
+                self.checkAllForCollision(box)
+                print("---------------")
             box.updatePosition()
 
 class RealBox(object):
@@ -48,7 +49,7 @@ class RealBox(object):
     TemporarySpeedScaler = 10
     color = None
     currentMovement=None
-    collisionOffset=0.3
+    collisionOffset=0.1
 
     #public
     def __init__(self, AbsolutePosition, boxSize, color=(255,0,0)):
