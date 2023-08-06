@@ -8,7 +8,8 @@ pygame.init()
 screen = pygame.display.set_mode((1000, 800))
 pygame.display.set_caption("SUCC")
 pygame.key.set_repeat(1)
-FPSCAP=100
+FPSCAP=30
+SMALLESTCUBESIZE=50
 delayFPS=1000/FPSCAP
 
 class ManagerForRealBoxes:
@@ -49,11 +50,12 @@ class RealBox:
     color = None
     currentMovement=None
     collisionOffset=0.01
+    amountOfCollisionSplits=None
 
-    #public
     def __init__(self, AbsolutePosition, boxSize, color=(255,0,0)):
         self.pos = AbsolutePosition
         self.boxSize = boxSize
+        self.amountOfCollisionSplits=[math.ceil(boxSize[0]/SMALLESTCUBESIZE), math.ceil(boxSize[1]/SMALLESTCUBESIZE)]
         self.movementDirection = [0,0]
         self.color = color
         self.constructArrayOfEdgeLinesRelative()
@@ -73,6 +75,10 @@ class RealBox:
     def updatePosition(self):
         self.pos[0] += self.currentMovement[0]
         self.pos[1] += self.currentMovement[1]
+
+    def resetPos(self):
+        self.pos[0]=0
+        self.pos[1]=0
 
     def updateXPosition(self):
         self.pos[0] += self.currentMovement[0]
@@ -100,7 +106,6 @@ class RealBox:
             return True
         return False
 
-    #private
     def constructArrayOfEdgeLinesRelative(self):
         edgeLine1 = [[0, 0],                [self.boxSize[0], 0]]
         edgeLine2 = [[0, 0],                [0, self.boxSize[1]]]
@@ -114,6 +119,24 @@ class RealBox:
         edgeLine3 = [[self.boxSize[0]+self.pos[0], self.boxSize[1]+self.pos[1]],     [self.boxSize[0]+self.pos[0], self.pos[1]]]
         edgeLine4 = [[self.boxSize[0]+self.pos[0], self.boxSize[1]+self.pos[1]],    [self.pos[0], self.boxSize[1]+self.pos[1]]]
         self.AbsoluteEdgeLines = [edgeLine1, edgeLine2, edgeLine3, edgeLine4]
+
+    def CreateMovementPathLines(self, xSplits, ySplits):
+        absoluteCurrentMovement = [self.currentMovement[0]+ self.pos[0], self.currentMovement[1]+self.pos[1]]
+        xSegmentLength = self.boxSize[0]/xSplits
+        ySegmentLength = self.boxSize[1]/ySplits
+        # array of pathLineStartPoint-s
+        finalMovementPathLines=[]
+        for i in range(xSplits+1):
+            finalMovementPathLines.append([[self.pos[0]+(i*xSegmentLength) , self.pos[1]], [absoluteCurrentMovement[0]+(i*xSegmentLength), absoluteCurrentMovement[1]]])
+            finalMovementPathLines.append([[self.pos[0]+(i*xSegmentLength) , self.pos[1]+self.boxSize[1]], [absoluteCurrentMovement[0]+(i*xSegmentLength), absoluteCurrentMovement[1]+self.boxSize[1]]])
+        for i in range(ySplits):
+            i+=1
+            if i!=ySplits:
+                finalMovementPathLines.append([[self.pos[0] , self.pos[1]+(i*ySegmentLength)], [absoluteCurrentMovement[0], absoluteCurrentMovement[1]+(i*ySegmentLength)]])
+                finalMovementPathLines.append([[self.pos[0]+self.boxSize[0] , self.pos[1]+(i*ySegmentLength)],
+                                                [absoluteCurrentMovement[0]+self.boxSize[0], absoluteCurrentMovement[1]+(i*ySegmentLength)]])
+
+        return finalMovementPathLines
 
     def ApplyMiddleMovement_HitAVerticalWall(self, shiftedShortestT):
         self.currentMovement[0]*=shiftedShortestT
@@ -129,16 +152,17 @@ class RealBox:
 
     def checkForCollision(self, target, prevShortestT=1.0):
         # current box's movement as a vector from with the box's position as origin
-        absoluteCurrentMovement = [self.currentMovement[0]+ self.pos[0], self.currentMovement[1]+self.pos[1]]
+        #absoluteCurrentMovement = [self.currentMovement[0]+ self.pos[0], self.currentMovement[1]+self.pos[1]]
 
         # Vectors for every corner's movement
-        movementPathLine1 = [[self.pos[0],self.pos[1]],                                        [absoluteCurrentMovement[0], absoluteCurrentMovement[1]]]
-        movementPathLine2 = [[self.boxSize[0]+self.pos[0], self.pos[1]],                       [absoluteCurrentMovement[0]+self.boxSize[0], absoluteCurrentMovement[1]]]
-        movementPathLine3 = [[self.pos[0], self.boxSize[1]+self.pos[1]],                       [absoluteCurrentMovement[0], absoluteCurrentMovement[1]+ self.boxSize[1]]]
-        movementPathLine4 = [[self.boxSize[0]+self.pos[0], self.boxSize[1]+self.pos[1]],       [absoluteCurrentMovement[0]+self.boxSize[0], self.boxSize[1]+absoluteCurrentMovement[1]]]
+        #movementPathLine1 = [[self.pos[0],self.pos[1]],                                        [absoluteCurrentMovement[0], absoluteCurrentMovement[1]]]
+        #movementPathLine2 = [[self.boxSize[0]+self.pos[0], self.pos[1]],                       [absoluteCurrentMovement[0]+self.boxSize[0], absoluteCurrentMovement[1]]]
+        #movementPathLine3 = [[self.pos[0], self.boxSize[1]+self.pos[1]],                       [absoluteCurrentMovement[0], absoluteCurrentMovement[1]+ self.boxSize[1]]]
+        #movementPathLine4 = [[self.boxSize[0]+self.pos[0], self.boxSize[1]+self.pos[1]],       [absoluteCurrentMovement[0]+self.boxSize[0], self.boxSize[1]+absoluteCurrentMovement[1]]]
         
 
-        Lines = [movementPathLine1, movementPathLine2, movementPathLine3, movementPathLine4]
+        #Lines = [movementPathLine1, movementPathLine2, movementPathLine3, movementPathLine4]
+        Lines = self.CreateMovementPathLines(self.amountOfCollisionSplits[0],self.amountOfCollisionSplits[1])
         # update the edgelines relative to the target-box's position
         target.constructArrayOfEdgeLinesAbsolute()
 
@@ -151,6 +175,7 @@ class RealBox:
         # and check if interesecting and update relevant variables
         for line in Lines:
             for edge in target.AbsoluteEdgeLines:
+                pygame.draw.line(screen, (255,255,255), line[0], line[1])
                 isIntersecting, intersectionPnt, t = intersectionVecReturnsT(line, edge)
                 if isIntersecting:
                     if t < shortestT:
@@ -187,9 +212,9 @@ class RealBox:
 
 
 mainBoxManager = ManagerForRealBoxes()
-PrimaryBox = RealBox([0, 0], (50, 50), (100, 100, 0))
+PrimaryBox = RealBox([0, 0], (200, 100), (100, 100, 0))
 SecondaryBox = RealBox([380, 380], (100, 100))
-ThirdBox = RealBox([500, 500], (50, 50))
+ThirdBox = RealBox([500, 500], (70, 70))
 
 mainBoxManager.addRealBox(SecondaryBox)
 mainBoxManager.addRealBox(ThirdBox)
@@ -225,7 +250,7 @@ while running:
                 ThirdBox.moveHorizontal(1)
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_q:
-                print("peepeepoopoo")
+                PrimaryBox.resetPos()
             if event.key == pygame.K_w:
                 if PrimaryBox.isMovingUp():
                     PrimaryBox.moveVertical(0)
