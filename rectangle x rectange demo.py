@@ -8,7 +8,7 @@ pygame.init()
 screen = pygame.display.set_mode((1000, 800))
 pygame.display.set_caption("SUCC")
 pygame.key.set_repeat(1)
-FPSCAP=30
+FPSCAP=100
 delayFPS=1000/FPSCAP
 
 class ManagerForRealBoxes:
@@ -34,9 +34,7 @@ class ManagerForRealBoxes:
         for box in self.allRealBoxes:
             box.updateCurrentMovement()
             if self.checkAllForCollision(box):
-                print("SecondCheck")
                 self.checkAllForCollision(box)
-                print("---------------")
             box.updatePosition()
 
 class RealBox:
@@ -83,7 +81,7 @@ class RealBox:
 
     def draw(self, window):
         self.rectBuffer = pygame.Rect(self.pos[0], self.pos[1], self.boxSize[0], self.boxSize[1])
-        #pygame.draw.rect(window, self.color, self.rectBuffer, 2)
+        pygame.draw.rect(window, self.color, self.rectBuffer, 2)
 
     def isMovingLeft(self):
         if self.movementDirection[0] < 0:
@@ -130,7 +128,10 @@ class RealBox:
         self.pos[0]+=self.currentMovement[0]*shiftedShortestT
 
     def checkForCollision(self, target, prevShortestT=1.0):
+        # current box's movement as a vector from with the box's position as origin
         absoluteCurrentMovement = [self.currentMovement[0]+ self.pos[0], self.currentMovement[1]+self.pos[1]]
+
+        # Vectors for every corner's movement
         movementPathLine1 = [[self.pos[0],self.pos[1]],                                        [absoluteCurrentMovement[0], absoluteCurrentMovement[1]]]
         movementPathLine2 = [[self.boxSize[0]+self.pos[0], self.pos[1]],                       [absoluteCurrentMovement[0]+self.boxSize[0], absoluteCurrentMovement[1]]]
         movementPathLine3 = [[self.pos[0], self.boxSize[1]+self.pos[1]],                       [absoluteCurrentMovement[0], absoluteCurrentMovement[1]+ self.boxSize[1]]]
@@ -138,27 +139,33 @@ class RealBox:
         
 
         Lines = [movementPathLine1, movementPathLine2, movementPathLine3, movementPathLine4]
+        # update the edgelines relative to the target-box's position
         target.constructArrayOfEdgeLinesAbsolute()
 
+        # the shortest T of a lerp(Vector, t)
         shortestT = prevShortestT
+        # nearest edge that has collieded
         nearestEdge = []
+
+        # iterate through every target-box's edge against self-box's pathline 
+        # and check if interesecting and update relevant variables
         for line in Lines:
             for edge in target.AbsoluteEdgeLines:
-                pygame.draw.line(screen, (255,255,255), line[0], line[1])
-                pygame.draw.line(screen, (255,255,255), edge[0], edge[1])
                 isIntersecting, intersectionPnt, t = intersectionVecReturnsT(line, edge)
                 if isIntersecting:
                     if t < shortestT:
                         shortestT = t
                         nearestEdge=edge
+        # if there is a collision
         if shortestT < 1.0: 
             if self.movementDirection[0]==0 or self.movementDirection[1]==0:
+                # correct collision for non-diagonal movement
                 shiftedShortestT=shortestT-self.collisionOffset
                 self.currentMovement[0]*=shiftedShortestT
                 self.currentMovement[1]*=shiftedShortestT
-                print("FullStop!")
                 return shiftedShortestT, False
             else:
+                # correct collision for diagonal movement
                 nEdgeRelativePntA = [nearestEdge[0][0]-target.pos[0], nearestEdge[0][1]-target.pos[1]]
                 nEdgeRelativePntB = [nearestEdge[1][0]-target.pos[0], nearestEdge[1][1]-target.pos[1]]
                 shiftedShortestT=shortestT-self.collisionOffset
@@ -172,7 +179,6 @@ class RealBox:
                         self.ApplyMiddleMovement_HitAVerticalWall(shiftedShortestT)
                     else:
                         self.ApplyMiddleMovement_HitAHorizontalWall(shiftedShortestT)
-                print("DiagonalStop")
                 return shiftedShortestT, True
         return shortestT, False
 
