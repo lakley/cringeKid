@@ -38,7 +38,7 @@ class ManagerForRealBoxes:
                 print("---------------")
             box.updatePosition()
 
-class RealBox(object):
+class RealBox:
     #variables
     EdgeLines=None
     AbsoluteEdgeLines=None
@@ -46,7 +46,7 @@ class RealBox(object):
     boxSize=None
     rectBuffer = None
     movementDirection = None
-    TemporarySpeedScaler = 10
+    TemporarySpeedScaler = 5
     color = None
     currentMovement=None
     collisionOffset=0.1
@@ -73,6 +73,11 @@ class RealBox(object):
 
     def updatePosition(self):
         self.pos[0] += self.currentMovement[0]
+        self.pos[1] += self.currentMovement[1]
+
+    def updateXPosition(self):
+        self.pos[0] += self.currentMovement[0]
+    def updateYPosition(self):
         self.pos[1] += self.currentMovement[1]
 
     def draw(self, window):
@@ -136,8 +141,6 @@ class RealBox(object):
         if shortestT < 1.0: 
             if self.movementDirection[0]==0 or self.movementDirection[1]==0:
                 shiftedShortestT=shortestT-self.collisionOffset
-                #if shiftedShortestT<0 or True:
-                #    shiftedShortestT=0
                 self.currentMovement[0]*=shiftedShortestT
                 self.currentMovement[1]*=shiftedShortestT
                 print("FullStop!")
@@ -146,18 +149,28 @@ class RealBox(object):
                 nEdgeRelativePntA = [nearestEdge[0][0]-target.pos[0], nearestEdge[0][1]-target.pos[1]]
                 nEdgeRelativePntB = [nearestEdge[1][0]-target.pos[0], nearestEdge[1][1]-target.pos[1]]
                 shiftedShortestT=shortestT-self.collisionOffset
-                #if shiftedShortestT<0 or True:
-                #    shiftedShortestT=0
                 if nEdgeRelativePntA[0]==0:
                     if nEdgeRelativePntB[0]!=0:
                         self.currentMovement[1]*=shiftedShortestT
+                        self.updateYPosition()
+                        self.currentMovement[1]=0
+                        self.pos[0]+=self.currentMovement[0]*shiftedShortestT
                     else:
                         self.currentMovement[0]*=shiftedShortestT
+                        self.updateXPosition()
+                        self.currentMovement[0]=0
+                        self.pos[1]+=self.currentMovement[1]*shiftedShortestT
                 else:
                     if nEdgeRelativePntB[0]!=0:
                         self.currentMovement[0]*=shiftedShortestT
+                        self.updateXPosition()
+                        self.currentMovement[0]=0
+                        self.pos[1]+=self.currentMovement[1]*shiftedShortestT
                     else:
                         self.currentMovement[1]*=shiftedShortestT
+                        self.updateYPosition()
+                        self.currentMovement[1]=0
+                        self.pos[0]+=self.currentMovement[0]*shiftedShortestT
                 print("DiagonalStop")
                 return shiftedShortestT, True
         return shortestT, False
