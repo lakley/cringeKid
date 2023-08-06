@@ -8,7 +8,8 @@ pygame.init()
 screen = pygame.display.set_mode((1000, 800))
 pygame.display.set_caption("SUCC")
 pygame.key.set_repeat(1)
-delayFPS=1000/30
+FPSCAP=30
+delayFPS=1000/FPSCAP
 
 class ManagerForRealBoxes:
     #private
@@ -46,10 +47,10 @@ class RealBox:
     boxSize=None
     rectBuffer = None
     movementDirection = None
-    TemporarySpeedScaler = 5
+    TemporarySpeedScaler = 500/FPSCAP
     color = None
     currentMovement=None
-    collisionOffset=0.1
+    collisionOffset=0.01
 
     #public
     def __init__(self, AbsolutePosition, boxSize, color=(255,0,0)):
@@ -116,6 +117,18 @@ class RealBox:
         edgeLine4 = [[self.boxSize[0]+self.pos[0], self.boxSize[1]+self.pos[1]],    [self.pos[0], self.boxSize[1]+self.pos[1]]]
         self.AbsoluteEdgeLines = [edgeLine1, edgeLine2, edgeLine3, edgeLine4]
 
+    def ApplyMiddleMovement_HitAVerticalWall(self, shiftedShortestT):
+        self.currentMovement[0]*=shiftedShortestT
+        self.updateXPosition()
+        self.currentMovement[0]=0
+        self.pos[1]+=self.currentMovement[1]*shiftedShortestT
+
+    def ApplyMiddleMovement_HitAHorizontalWall(self, shiftedShortestT):
+        self.currentMovement[1]*=shiftedShortestT
+        self.updateYPosition()
+        self.currentMovement[1]=0
+        self.pos[0]+=self.currentMovement[0]*shiftedShortestT
+
     def checkForCollision(self, target, prevShortestT=1.0):
         absoluteCurrentMovement = [self.currentMovement[0]+ self.pos[0], self.currentMovement[1]+self.pos[1]]
         movementPathLine1 = [[self.pos[0],self.pos[1]],                                        [absoluteCurrentMovement[0], absoluteCurrentMovement[1]]]
@@ -151,26 +164,14 @@ class RealBox:
                 shiftedShortestT=shortestT-self.collisionOffset
                 if nEdgeRelativePntA[0]==0:
                     if nEdgeRelativePntB[0]!=0:
-                        self.currentMovement[1]*=shiftedShortestT
-                        self.updateYPosition()
-                        self.currentMovement[1]=0
-                        self.pos[0]+=self.currentMovement[0]*shiftedShortestT
+                        self.ApplyMiddleMovement_HitAHorizontalWall(shiftedShortestT)
                     else:
-                        self.currentMovement[0]*=shiftedShortestT
-                        self.updateXPosition()
-                        self.currentMovement[0]=0
-                        self.pos[1]+=self.currentMovement[1]*shiftedShortestT
+                        self.ApplyMiddleMovement_HitAVerticalWall(shiftedShortestT)
                 else:
                     if nEdgeRelativePntB[0]!=0:
-                        self.currentMovement[0]*=shiftedShortestT
-                        self.updateXPosition()
-                        self.currentMovement[0]=0
-                        self.pos[1]+=self.currentMovement[1]*shiftedShortestT
+                        self.ApplyMiddleMovement_HitAVerticalWall(shiftedShortestT)
                     else:
-                        self.currentMovement[1]*=shiftedShortestT
-                        self.updateYPosition()
-                        self.currentMovement[1]=0
-                        self.pos[0]+=self.currentMovement[0]*shiftedShortestT
+                        self.ApplyMiddleMovement_HitAHorizontalWall(shiftedShortestT)
                 print("DiagonalStop")
                 return shiftedShortestT, True
         return shortestT, False
@@ -218,7 +219,7 @@ while running:
                 ThirdBox.moveHorizontal(1)
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_q:
-                print("Fuck me; daddy please!")
+                print("peepeepoopoo")
             if event.key == pygame.K_w:
                 if PrimaryBox.isMovingUp():
                     PrimaryBox.moveVertical(0)
