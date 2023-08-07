@@ -7,6 +7,14 @@ class Vector2D:
         self.x = x
         self.y = y
 
+    def set(self, x, y):
+        self.x = x
+        self.y = y
+
+    def set(self, target):
+        self.x = target.x
+        self.y = target.y
+
     def add(self, target):
         self.x += target.x
         self.y += target.y
@@ -18,6 +26,10 @@ class Vector2D:
     def multiply(self, target):
         self.x *= target.x
         self.y *= target.y
+
+    def scale(self, t):
+        self.x *= t
+        self.y *= t
 
     def divide(self, target):
         self.x /= target.x
