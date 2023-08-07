@@ -121,7 +121,7 @@ def Collision_Check(mousePos, lines1, lines2): # specific for starlines
             if collision:
                 pygame.draw.circle(screen, (150,100,0), pnt, 5)
 
-delayFPS=1000/10
+delayFPS=1000/100
 
 
 
