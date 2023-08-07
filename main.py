@@ -114,6 +114,34 @@ def intersectionVecReturnsT(L1, L2):
     
     return False, (0, 0), t
     
+def LinexLineIntersect(L1, L2):
+    x1 = L1[0].x
+    x2 = L1[1].x
+    x3 = L2[0].x 
+    x4 = L2[1].x
+    y1 = L1[0].y
+    y2 = L1[1].y
+    y3 = L2[0].y
+    y4 = L2[1].y
+    t = 0
+    u = 0
+
+    top = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3))
+
+    top2  = ((x2-x1)*(y1-y3) - (y2-y1)*(x1-x3))
+
+    bot =((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1))
+
+
+    if bot!=0 :
+        t = top/bot
+        u = top2/bot
+        if t < 0 or t > 1 or u < 0 or u > 1:
+          return False, (0, 0), t
+        return True, (x1+t*(x2-x1), y1+t*(y2-y1)), t
+    
+    return False, (0, 0), t
+
 def Collision_Check(mousePos, lines1, lines2): # specific for starlines
     for line1 in lines1:
         for line2 in lines2:

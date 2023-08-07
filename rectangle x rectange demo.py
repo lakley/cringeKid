@@ -158,13 +158,17 @@ class RealBox:
         self.currentMovement[0]*=shiftedShortestT
         self.updateXPosition()
         self.currentMovement[0]=0
-        self.pos[1]+=self.currentMovement[1]*shiftedShortestT
+        a=self.currentMovement[1]*shiftedShortestT
+        self.pos[1]+=a
+        self.currentMovement[1] -= a
 
     def ApplyMiddleMovement_HitAHorizontalWall(self, shiftedShortestT):
         self.currentMovement[1]*=shiftedShortestT
         self.updateYPosition()
         self.currentMovement[1]=0
-        self.pos[0]+=self.currentMovement[0]*shiftedShortestT
+        a = self.currentMovement[0]*shiftedShortestT
+        self.pos[0]+=a
+        self.currentMovement[0] -= a
 
     def checkForCollision(self, target, prevShortestT=1.0):
         #Lines = [movementPathLine1, movementPathLine2, movementPathLine3, movementPathLine4]
