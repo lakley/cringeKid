@@ -24,18 +24,32 @@ class ManagerForRealBoxes:
     def drawAllRealBoxes(self, window):
         for box in self.allRealBoxes:
             box.draw(window)
-    def checkAllForCollision(self, box):
+    def checkCollision(self, box):
+        currentShortestT=1
+        currentNearestBox=None
+        currentIsDiagonal=None
+        currentNearestEdge=None
         for otherBox in self.allRealBoxes:
                 if box != otherBox:
-                    shortestT, diagonal = box.checkForCollision(otherBox)
-                    if shortestT!=1.0 and diagonal:
-                        return True
-        return False
+                    shortestT, isDiagonal, nearestEdge = box.checkForCollision(otherBox)
+                    if shortestT!=1:
+                        if shortestT < currentShortestT:
+                            currentShortestT=shortestT
+                            currentNearestBox=otherBox
+                            currentIsDiagonal=isDiagonal
+                            currentNearestEdge=nearestEdge
+        return currentShortestT, currentNearestBox, currentIsDiagonal, currentNearestEdge
+    def checkAllForCollision(self, box):
+        currentShortestT, currentNearestBox, currentIsDiagonal, currentNearestEdge = self.checkCollision(box)
+        box.correctCollision(currentShortestT, currentNearestBox, currentIsDiagonal, currentNearestEdge)
+        if currentIsDiagonal:
+            currentShortestT, currentNearestBox, currentIsDiagonal, currentNearestEdge = self.checkCollision(box)
+            box.correctCollision(currentShortestT, currentNearestBox, currentIsDiagonal, currentNearestEdge)
+                        
     def updateAllBoxesMovements(self):
         for box in self.allRealBoxes:
             box.updateCurrentMovement()
-            if self.checkAllForCollision(box):
-                self.checkAllForCollision(box)
+            self.checkAllForCollision(box)
             box.updatePosition()
 
 class RealBox:
@@ -61,6 +75,8 @@ class RealBox:
         self.constructArrayOfEdgeLinesRelative()
         self.constructArrayOfEdgeLinesAbsolute()
         self.currentMovement = [0,0,0,0]
+    def resetMoveDir(self):
+        self.movementDirection=[0,0]
     def moveMulti(self, dir):
         self.movementDirection = dir
     def moveHorizontal(self, dir):
@@ -151,16 +167,6 @@ class RealBox:
         self.pos[0]+=self.currentMovement[0]*shiftedShortestT
 
     def checkForCollision(self, target, prevShortestT=1.0):
-        # current box's movement as a vector from with the box's position as origin
-        #absoluteCurrentMovement = [self.currentMovement[0]+ self.pos[0], self.currentMovement[1]+self.pos[1]]
-
-        # Vectors for every corner's movement
-        #movementPathLine1 = [[self.pos[0],self.pos[1]],                                        [absoluteCurrentMovement[0], absoluteCurrentMovement[1]]]
-        #movementPathLine2 = [[self.boxSize[0]+self.pos[0], self.pos[1]],                       [absoluteCurrentMovement[0]+self.boxSize[0], absoluteCurrentMovement[1]]]
-        #movementPathLine3 = [[self.pos[0], self.boxSize[1]+self.pos[1]],                       [absoluteCurrentMovement[0], absoluteCurrentMovement[1]+ self.boxSize[1]]]
-        #movementPathLine4 = [[self.boxSize[0]+self.pos[0], self.boxSize[1]+self.pos[1]],       [absoluteCurrentMovement[0]+self.boxSize[0], self.boxSize[1]+absoluteCurrentMovement[1]]]
-        
-
         #Lines = [movementPathLine1, movementPathLine2, movementPathLine3, movementPathLine4]
         Lines = self.CreateMovementPathLines(self.amountOfCollisionSplits[0],self.amountOfCollisionSplits[1])
         # update the edgelines relative to the target-box's position
@@ -169,7 +175,7 @@ class RealBox:
         # the shortest T of a lerp(Vector, t)
         shortestT = prevShortestT
         # nearest edge that has collieded
-        nearestEdge = []
+        nearestEdge = None
 
         # iterate through every target-box's edge against self-box's pathline 
         # and check if interesecting and update relevant variables
@@ -184,10 +190,19 @@ class RealBox:
         # if there is a collision
         if shortestT < 1.0: 
             if self.movementDirection[0]==0 or self.movementDirection[1]==0:
+                return shortestT, False, nearestEdge
+            else:
+                return shortestT, True, nearestEdge
+        return shortestT, False, nearestEdge
+    
+    def correctCollision(self, shortestT, target, IsDiagonal, nearestEdge):
+        if shortestT < 1.0 and target!=None and IsDiagonal!=None and nearestEdge!=None: 
+            if not IsDiagonal:
                 # correct collision for non-diagonal movement
                 shiftedShortestT=shortestT-self.collisionOffset
                 self.currentMovement[0]*=shiftedShortestT
                 self.currentMovement[1]*=shiftedShortestT
+                self.resetMoveDir()
                 return shiftedShortestT, False
             else:
                 # correct collision for diagonal movement
@@ -197,24 +212,27 @@ class RealBox:
                 if nEdgeRelativePntA[0]==0:
                     if nEdgeRelativePntB[0]!=0:
                         self.ApplyMiddleMovement_HitAHorizontalWall(shiftedShortestT)
+                        self.moveVertical(0)
                     else:
                         self.ApplyMiddleMovement_HitAVerticalWall(shiftedShortestT)
+                        self.moveHorizontal(0)
                 else:
                     if nEdgeRelativePntB[0]!=0:
                         self.ApplyMiddleMovement_HitAVerticalWall(shiftedShortestT)
+                        self.moveHorizontal(0)
                     else:
                         self.ApplyMiddleMovement_HitAHorizontalWall(shiftedShortestT)
-                return shiftedShortestT, True
-        return shortestT, False
+                        self.moveVertical(0)
+                
 
 
         
 
 
 mainBoxManager = ManagerForRealBoxes()
-PrimaryBox = RealBox([0, 0], (200, 100), (100, 100, 0))
+PrimaryBox = RealBox([0, 0], (50, 50), (100, 100, 0))
 SecondaryBox = RealBox([380, 380], (100, 100))
-ThirdBox = RealBox([500, 500], (70, 70))
+ThirdBox = RealBox([0, 500], (600, 50))
 
 mainBoxManager.addRealBox(SecondaryBox)
 mainBoxManager.addRealBox(ThirdBox)
@@ -231,7 +249,7 @@ while running:
             pass
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_w:
-                PrimaryBox.moveVertical(-1)
+                PrimaryBox.moveVertical(-2)
             if event.key == pygame.K_s:
                 PrimaryBox.moveVertical(1)
             if event.key == pygame.K_a:
@@ -279,7 +297,8 @@ while running:
                     ThirdBox.moveHorizontal(0)
         if event.type == pygame.QUIT:
             running = False
-
+    
+    PrimaryBox.movementDirection[1]+=0.1
     mainBoxManager.updateAllBoxesMovements()
     mainBoxManager.drawAllRealBoxes(screen)
 
