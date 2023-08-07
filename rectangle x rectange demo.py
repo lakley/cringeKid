@@ -8,7 +8,7 @@ pygame.init()
 screen = pygame.display.set_mode((1000, 800))
 pygame.display.set_caption("SUCC")
 pygame.key.set_repeat(1)
-FPSCAP=30
+FPSCAP=60
 SMALLESTCUBESIZE=50
 delayFPS=1000/FPSCAP
 
@@ -231,7 +231,7 @@ class RealBox:
 
 mainBoxManager = ManagerForRealBoxes()
 PrimaryBox = RealBox([0, 0], (50, 50), (100, 100, 0))
-SecondaryBox = RealBox([380, 380], (100, 100))
+SecondaryBox = RealBox([300, 300], (100, 100))
 ThirdBox = RealBox([0, 500], (600, 50))
 
 mainBoxManager.addRealBox(SecondaryBox)
@@ -240,7 +240,6 @@ mainBoxManager.addRealBox(PrimaryBox)
 
 while running:
     currentTicks = pygame.time.get_ticks()
-
     xMouse, yMouse = get_pos()
 
     ev = pygame.event.get()
@@ -249,7 +248,7 @@ while running:
             pass
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_w:
-                PrimaryBox.moveVertical(-2)
+                PrimaryBox.moveVertical(-1)
             if event.key == pygame.K_s:
                 PrimaryBox.moveVertical(1)
             if event.key == pygame.K_a:
@@ -298,7 +297,6 @@ while running:
         if event.type == pygame.QUIT:
             running = False
     
-    PrimaryBox.movementDirection[1]+=0.1
     mainBoxManager.updateAllBoxesMovements()
     mainBoxManager.drawAllRealBoxes(screen)
 
